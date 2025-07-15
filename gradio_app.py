@@ -20,7 +20,8 @@ MAX_SEED = int(1e7)
 
 def get_example_img_list():
     print('Loading example img list ...')
-    return sorted(glob('./assets/example_images/**/*.png', recursive=True))
+    imgs = sorted(glob('./assets/example_images/**/*.png', recursive=True))
+    return list(dict.fromkeys(imgs))
 
 
 def get_example_txt_list():
@@ -354,51 +355,72 @@ def build_app():
 
     # ─────────────────────────────  CUSTOM CSS  ─────────────────────────────
     custom_css = """
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+    :root {
+        --bg-color:#1E1E2F;
+        --accent-color:#6366F1;
+        --text-color:#FFFFFF;
+        --card-bg:rgba(255,255,255,0.05);
+        --border-color:rgba(255,255,255,0.15);
+    }
+
+    body {
+        background:linear-gradient(135deg,#1E1E2F 0%,#2A2A3D 100%);
+        color:var(--text-color);
+        font-family:'Inter',sans-serif;
+    }
 
     .app.svelte-wpkpf6.svelte-wpkpf6:not(.fill_width){
         max-width:1480px;
         padding:20px;
-        background-color:#ffffff;
-        border-radius:12px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.05);
-        font-family:'Poppins',sans-serif;
+        background:var(--card-bg);
+        backdrop-filter:blur(14px);
+        border-radius:20px;
+        border:1px solid var(--border-color);
+        box-shadow:0 8px 24px rgba(0,0,0,0.25);
+        font-family:'Inter',sans-serif;
     }
 
-    /* ------------- komponen lainnya ------------- */
     .mv-image button .wrap{font-size:10px;}
     .mv-image .icon-wrap{width:20px;}
 
     .horizontal-gallery{display:flex;overflow-x:auto;gap:15px;padding:15px 0;}
     .horizontal-gallery .example-item{
         flex:0 0 auto;width:120px;height:120px;
-        border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;
+        border:1px solid var(--border-color);border-radius:8px;overflow:hidden;
         transition:transform .3s ease;
     }
     .horizontal-gallery .example-item:hover{transform:scale(1.05);}
     .horizontal-gallery::-webkit-scrollbar{height:8px;}
-    .horizontal-gallery::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px;}
+    .horizontal-gallery::-webkit-scrollbar-thumb{background:#555;border-radius:4px;}
 
-    .image-upload .wrap{background:#f9fafb;border-radius:8px;padding:16px;}
-    .image-upload .wrap span{font-size:16px;color:#374151;}
+    .image-upload .wrap{background:var(--card-bg);border-radius:8px;padding:16px;border:1px solid var(--border-color);}
+    .image-upload .wrap span{font-size:16px;color:var(--text-color);}
 
     .gen-shape-btn button{
-        background:#3B82F6;border-radius:8px;
-        box-shadow:0 2px 4px rgba(0,0,0,0.1);
-        transition:background .3s ease;
+        background:var(--accent-color);border-radius:8px;color:var(--text-color);
+        box-shadow:0 2px 8px rgba(99,102,241,0.4);
+        transition:background .3s, box-shadow .3s;
     }
-    .gen-shape-btn button:hover{background:#2563eb;}
+    .gen-shape-btn button:hover{
+        background:#4f52ff;
+        box-shadow:0 4px 12px rgba(99,102,241,0.6);
+    }
 
     .gr-tabs button{
-        padding:8px 16px;font-size:14px;font-weight:500;color:#6b7280;
+        padding:8px 16px;font-size:14px;font-weight:500;color:var(--text-color);background:transparent;
+        transition:color .3s;
     }
     .gr-tabs button.selected{
-        color:#1E3A8A;border-bottom:2px solid #3B82F6;
+        color:var(--accent-color);border-bottom:2px solid var(--accent-color);
     }
 
-    .label{font-weight:600;color:#374151;}
+    .label{font-weight:600;color:var(--text-color);}
 
-    /* ─── sembunyikan footer default Gradio ─── */
+    .gallery-item{overflow:hidden;border-radius:8px;transition:transform .3s;}
+    .gallery-item:hover{transform:scale(1.05);}
+
     footer{display:none !important;}
     """
 
@@ -550,21 +572,21 @@ def build_app():
 
                 # Hook agar kalau user clear upload gallery tetap utuh
                 image.change(
-                    fn=lambda img, items: items if img is None else [(img, "")] + items,
+                    fn=lambda img, items: items if img is None else [(img, "")] + [it for it in (items or []) if it[0] != img],
                     inputs=[image, gallery],
                     outputs=[gallery],
                     queue=False
                 )
                 # setiap Gen Shape (white mesh) masuk Image→3D gallery
                 file_out.change(
-                    fn=lambda path, items: ([(path, "")] + (items or [])) if path else (items or []),
+                    fn=lambda path, items: ([(path, "")] + [it for it in (items or []) if it[0] != path]) if path else (items or []),
                     inputs=[file_out, img2g_gallery],
                     outputs=[img2g_gallery],
                     queue=False
                 )
 
                 file_out2.change(
-                    fn=lambda path, items: ([(path, "")] + (items or [])) if path else (items or []),
+                    fn=lambda path, items: ([(path, "")] + [it for it in (items or []) if it[0] != path]) if path else (items or []),
                     inputs=[file_out2, txt2g_gallery],
                     outputs=[txt2g_gallery],
                     queue=False
